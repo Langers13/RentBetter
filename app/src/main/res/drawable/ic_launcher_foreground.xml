@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Pink House Body -->
+    <path
+        android:fillColor="@color/icon_house_pink"
+        android:pathData="M54,14 L30,38 V70 C30,72.2 31.8,74 34,74 H74 C76.2,74 78,72.2 78,70 V38 L54,14 Z" />
+    <!-- Dark Navy Fold -->
+    <path
+        android:fillColor="@color/icon_house_fold"
+        android:pathData="M54,14 L78,38 H54 V14 Z" />
+    <!-- Curved detail for the fold flap -->
+    <path
+        android:fillColor="@color/icon_house_fold"
+        android:pathData="M54,38 C54,38 66,38 78,38 L54,14 V38 Z" />
+</vector>
