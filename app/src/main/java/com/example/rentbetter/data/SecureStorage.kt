@@ -1,50 +1,68 @@
 package com.example.rentbetter.data
 
 import android.content.Context
-import androidx.core.content.edit
-import androidx.security.crypto.EncryptedSharedPreferences
-import androidx.security.crypto.MasterKey
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.preferencesDataStore
+import com.google.crypto.tink.Aead
+import com.google.crypto.tink.KeyTemplates
+import com.google.crypto.tink.aead.AeadConfig
+import com.google.crypto.tink.integration.android.AndroidKeysetManager
+import com.google.crypto.tink.RegistryConfiguration
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.runBlocking
+import android.util.Base64
 
-class SecureStorage(context: Context) {
+private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "secure_rentbetter_prefs")
 
-    private val masterKey = MasterKey.Builder(context)
-        .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-        .build()
+class SecureStorage(private val context: Context) {
 
-    private val sharedPreferences = EncryptedSharedPreferences.create(
-        context,
-        "secure_rentbetter_prefs",
-        masterKey,
-        EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-        EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-    )
+    private val aead: Aead by lazy {
+        AeadConfig.register()
+        AndroidKeysetManager.Builder()
+            .withSharedPref(context, "tink_keyset", "tink_pref_file")
+            .withKeyTemplate(KeyTemplates.get("AES256_GCM"))
+            .withMasterKeyUri("android-keystore://rentbetter_master_key")
+            .build()
+            .keysetHandle
+            .getPrimitive(RegistryConfiguration.get(), Aead::class.java)
+    }
 
     companion object {
-        private const val KEY_EMAIL = "user_email"
-        private const val KEY_PASSWORD = "user_password"
-        private const val KEY_IS_LOGGED_IN = "is_logged_in"
+        private val KEY_EMAIL = stringPreferencesKey("user_email")
+        private val KEY_PASSWORD = stringPreferencesKey("user_password")
+        private val KEY_IS_LOGGED_IN = booleanPreferencesKey("is_logged_in")
     }
 
-    fun saveCredentials(email: String, password: String) {
-        sharedPreferences.edit {
-            putString(KEY_EMAIL, email)
-            putString(KEY_PASSWORD, password)
+    private fun decrypt(encryptedValue: String?): String? {
+        if (encryptedValue == null) return null
+        return try {
+            val decoded = Base64.decode(encryptedValue, Base64.DEFAULT)
+            val decrypted = aead.decrypt(decoded, null)
+            String(decrypted)
+        } catch (_: Exception) {
+            null
         }
     }
 
-    fun getEmail(): String? = sharedPreferences.getString(KEY_EMAIL, null)
+    fun getEmail(): String? = runBlocking {
+        context.dataStore.data.map { prefs ->
+            decrypt(prefs[KEY_EMAIL])
+        }.first()
+    }
     
-    fun getPassword(): String? = sharedPreferences.getString(KEY_PASSWORD, null)
-
-    fun setLoggedIn(loggedIn: Boolean) {
-        sharedPreferences.edit {
-            putBoolean(KEY_IS_LOGGED_IN, loggedIn)
-        }
+    fun getPassword(): String? = runBlocking {
+        context.dataStore.data.map { prefs ->
+            decrypt(prefs[KEY_PASSWORD])
+        }.first()
     }
 
-    fun isLoggedIn(): Boolean = sharedPreferences.getBoolean(KEY_IS_LOGGED_IN, false)
-
-    fun clear() {
-        sharedPreferences.edit { clear() }
+    fun isLoggedIn(): Boolean = runBlocking {
+        context.dataStore.data.map { prefs ->
+            prefs[KEY_IS_LOGGED_IN] ?: false
+        }.first()
     }
 }

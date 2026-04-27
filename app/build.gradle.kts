@@ -60,8 +60,10 @@ dependencies {
     implementation(libs.androidx.adaptive.navigation)
     implementation(libs.androidx.adaptive.navigation3)
 
-    // Security
+    // Security & Storage
     implementation(libs.androidx.security.crypto)
+    implementation(libs.androidx.datastore.preferences)
+    implementation(libs.tink.android)
 
     implementation(libs.kotlinx.serialization.json)
 

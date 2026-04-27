@@ -96,11 +96,15 @@ fun WebViewScreen(
 
                         override fun doUpdateVisitedHistory(view: WebView?, url: String?, isReload: Boolean) {
                             super.doUpdateVisitedHistory(view, url, isReload)
-                            canGoBack = view?.canGoBack() == true
+                            if (canGoBack != view?.canGoBack()) {
+                                canGoBack = view?.canGoBack() == true
+                            }
                         }
 
                         override fun onPageFinished(view: WebView?, url: String?) {
-                            canGoBack = view?.canGoBack() == true
+                            if (canGoBack != view?.canGoBack()) {
+                                canGoBack = view?.canGoBack() == true
+                            }
                             val email = secureStorage.getEmail()
                             val password = secureStorage.getPassword()
                             
