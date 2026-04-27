@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
+import androidx.activity.compose.BackHandler
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -31,11 +32,17 @@ fun WebViewScreen(
 ) {
     var isLoading by remember { mutableStateOf(true) }
     var progress by remember { mutableFloatStateOf(0f) }
-    var webView: WebView? by remember { mutableStateOf(null) }
+    var webViewRef by remember { mutableStateOf<WebView?>(null) }
+    var canGoBack by remember { mutableStateOf(false) }
+
+    // Handle system back button
+    BackHandler(enabled = canGoBack) {
+        webViewRef?.goBack()
+    }
 
     LaunchedEffect(viewModel.refreshTrigger) {
         if (viewModel.refreshTrigger > 0) {
-            webView?.reload()
+            webViewRef?.reload()
         }
     }
 
@@ -54,10 +61,9 @@ fun WebViewScreen(
         AndroidView(
             factory = { context ->
                 WebView(context).apply {
-                    webView = this
+                    webViewRef = this
                     settings.javaScriptEnabled = true
                     settings.domStorageEnabled = true
-                    settings.databaseEnabled = true
                     settings.loadWithOverviewMode = true
                     settings.useWideViewPort = true
                     settings.mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
@@ -67,6 +73,7 @@ fun WebViewScreen(
                     
                     // Add JS Interface for menu communication
                     addJavascriptInterface(object {
+                        @Suppress("unused")
                         @JavascriptInterface
                         fun onMenuToggle(isVisible: Boolean) {
                             viewModel.setMenuVisibility(isVisible)
@@ -76,7 +83,9 @@ fun WebViewScreen(
                     webChromeClient = object : WebChromeClient() {
                         override fun onProgressChanged(view: WebView?, newProgress: Int) {
                             progress = newProgress / 100f
-                            if (newProgress == 100) isLoading = false
+                            if (newProgress == 100) {
+                                isLoading = false
+                            }
                         }
                     }
 
@@ -85,7 +94,13 @@ fun WebViewScreen(
                             isLoading = true
                         }
 
+                        override fun doUpdateVisitedHistory(view: WebView?, url: String?, isReload: Boolean) {
+                            super.doUpdateVisitedHistory(view, url, isReload)
+                            canGoBack = view?.canGoBack() == true
+                        }
+
                         override fun onPageFinished(view: WebView?, url: String?) {
+                            canGoBack = view?.canGoBack() == true
                             val email = secureStorage.getEmail()
                             val password = secureStorage.getPassword()
                             

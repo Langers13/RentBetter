@@ -1,6 +1,7 @@
 package com.example.rentbetter.data
 
 import android.content.Context
+import androidx.core.content.edit
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 
@@ -25,10 +26,10 @@ class SecureStorage(context: Context) {
     }
 
     fun saveCredentials(email: String, password: String) {
-        sharedPreferences.edit()
-            .putString(KEY_EMAIL, email)
-            .putString(KEY_PASSWORD, password)
-            .apply()
+        sharedPreferences.edit {
+            putString(KEY_EMAIL, email)
+            putString(KEY_PASSWORD, password)
+        }
     }
 
     fun getEmail(): String? = sharedPreferences.getString(KEY_EMAIL, null)
@@ -36,14 +37,14 @@ class SecureStorage(context: Context) {
     fun getPassword(): String? = sharedPreferences.getString(KEY_PASSWORD, null)
 
     fun setLoggedIn(loggedIn: Boolean) {
-        sharedPreferences.edit()
-            .putBoolean(KEY_IS_LOGGED_IN, loggedIn)
-            .apply()
+        sharedPreferences.edit {
+            putBoolean(KEY_IS_LOGGED_IN, loggedIn)
+        }
     }
 
     fun isLoggedIn(): Boolean = sharedPreferences.getBoolean(KEY_IS_LOGGED_IN, false)
 
     fun clear() {
-        sharedPreferences.edit().clear().apply()
+        sharedPreferences.edit { clear() }
     }
 }

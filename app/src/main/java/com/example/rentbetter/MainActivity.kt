@@ -54,7 +54,7 @@ class MainActivity : ComponentActivity() {
                     entryProvider = myEntryProvider,
                     onBack = {
                         if (backStack.size > 1) {
-                            backStack.removeLast()
+                            backStack.removeAt(backStack.size - 1)
                         }
                     }
                 )
